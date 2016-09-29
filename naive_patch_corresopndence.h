@@ -63,7 +63,6 @@ void naive_patch_corresopndence(
                 }
             }
         }
-        TEST(ay);
     }
     
     total_patch_distance = 0;

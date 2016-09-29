@@ -3,8 +3,6 @@
 
 This is an naive exhaustive O(n**2) algorithm for finding optimal patch correspondences between two images. This is mostly used to compare against PatchMatch, which in our experience is much more effective. 
 
-TODO: 
-
 */
 
 #include <chrono>
@@ -30,12 +28,12 @@ void usage() {
                     "\n"
                     "    <input_image_b>.png: This is the file name of input image B. Must be a .png file. \n"
                     "\n"
-                    "    <output_file>.pfm: This string is the name of the desired output file. This will be a .pfm file containing the nearest neighbor field. The output file will be 3 dimensional. It will have the same X and Y dimensions as input image A (both minus the size of patch_dim). It's Z dimension will have length 3 (to describe the X and Y coordinates of input image b that represents the nearest neighbor patch as well as the patch distance). Patches of size patch_dim by patch_dim will be referred to by their upper left coordinate. In order to get the coordinates (x_b,y_b) in input image b that correspond to the coordinates (x_a,y_a) in input image A using this output file, we will have to use a pfm reader to extract the values at output_file[y_a,x_a,0] to get x_b and output_file[y_a,x_a,1] to get y_b. \n"
+                    "    <output_file>.pfm: This string is the name of the desired output file. This will be a .pfm file containing the nearest neighbor field. The output file will be 3 dimensional. It will have the same X and Y dimensions as input image A (both minus the size of patch_dim). It's Z dimension will have length 3 (to describe the X and Y coordinates in input image b that represents the nearest neighbor patch as well as the patch distance). Patches of size patch_dim by patch_dim will be referred to by their upper left coordinate. In order to get the coordinates (x_b,y_b) in input image b that correspond to the coordinates (x_a,y_a) in input image A using this output file, we will have to use a pfm reader to extract the values at output_file[y_a,x_a,0] to get x_b and output_file[y_a,x_a,1] to get y_b. The patch distance is stored in output_file[y_a,x_a,2]. \n"
                     "\n"
                     "\n"
                     "Options: \n"
                     "\n"
-                    "    -patch_dim <patch_dim>: This int value determines the size of the patches. The patches will be size <patch_dim> by <patch_dim>. \n"
+                    "    -patch_dim <patch_dim>: This int value determines the size of the patches. The patches will be size <patch_dim> by <patch_dim>. The default value is 5. \n"
                     "\n"
                     "\n"
            );
@@ -44,12 +42,15 @@ void usage() {
 
 int main(int argc, char* argv[]) {
     
+    std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
+    
     if (argc<4) {
         usage();
     }
-
+    
     std::srand( std::time(NULL) );
-
+    
+    
     static const char* A_name = argv[1];
     static const char* B_name = argv[2];
     static const char* output_name = argv[3];
@@ -80,6 +81,17 @@ int main(int argc, char* argv[]) {
     long total_patch_distance;
     double mean_patch_distance;
     
+    for(int y=0; y<Ann_height; y++) { 
+        for(int x=0; x<Ann_width; x++) { 
+            total_patch_distance += LONG(Ann(y,x,D_COORD));
+        }
+    }
+    mean_patch_distance = DOUBLE(total_patch_distance)/DOUBLE(Ann_height*Ann_width);
+    
+    NEWLINE;
+    cout << "Initial Total Patch Distance: " << total_patch_distance << endl;
+    cout << "Initial Mean Patch Distance:  " << mean_patch_distance << endl;
+    
     naive_patch_corresopndence(A, B, Ann, A_height, A_width, B_height, B_width, Ann_height, Ann_width, patch_dim, total_patch_distance, mean_patch_distance);
     
     // Write output to .pfm file
@@ -99,6 +111,12 @@ int main(int argc, char* argv[]) {
     NEWLINE;
     cout << "Final Total Patch Distance: " << total_patch_distance << endl;
     cout << "Final Mean Patch Distance:  " << mean_patch_distance << endl;
+    
+    std::chrono::high_resolution_clock::time_point end_time = std::chrono::high_resolution_clock::now();
+    
+    NEWLINE;
+    cout << "Total Run Time: " << (std::chrono::duration_cast<std::chrono::nanoseconds>(end_time-start_time).count()) / (pow(10.0,9.0)) << " seconds." << endl;
+    NEWLINE;
     
     return 0;
 }
